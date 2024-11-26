@@ -16,19 +16,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         // Example of a call to a native method
-        binding.sampleText.text = stringFromJNI()
-    }
+        binding.sampleText.text = GysoFfmpegTools.instance.mainTest()
 
-    /**
-     * A native method that is implemented by the 'ndklearnapplication' native library,
-     * which is packaged with this application.
-     */
-    external fun stringFromJNI(): String
-
-    companion object {
-        // Used to load the 'ndklearnapplication' library on application startup.
-        init {
-            System.loadLibrary("gysotools")
-        }
     }
 }

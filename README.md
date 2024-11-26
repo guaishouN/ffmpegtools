@@ -1,2 +1,2 @@
-# ffmpegtools
+# FFMPEGtools
 ffmpeg tools
