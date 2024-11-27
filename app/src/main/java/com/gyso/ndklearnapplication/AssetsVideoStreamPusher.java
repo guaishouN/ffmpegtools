@@ -104,25 +104,26 @@ public class AssetsVideoStreamPusher {
         // 提取 SPS 和 PPS
         ByteBuffer spsBuffer = inputFormat.getByteBuffer("csd-0");  // SPS
         ByteBuffer ppsBuffer = inputFormat.getByteBuffer("csd-1");  // PPS
-
+        int count =0;
         // 发送 SPS 和 PPS 数据帧
         assert spsBuffer != null;
         byte[] sps = new byte[spsBuffer.remaining()];
         spsBuffer.get(sps);
-        Log.i(TAG, "send sps len["+sps.length+"]"+Arrays.toString(sps));
+        Log.i(TAG, "count["+count+"] send sps len["+sps.length+"]"+Arrays.toString(sps));
         outputStream.write(sps);
         outputStream.flush();
-
+        count +=1;
 
         assert ppsBuffer != null;
         byte[] pps = new byte[ppsBuffer.remaining()];
         ppsBuffer.get(pps);
-        Log.i(TAG, "send pps len["+pps.length+"]"+Arrays.toString(pps));
+        Log.i(TAG, "count["+count+"] send pps len["+pps.length+"]"+Arrays.toString(pps));
         outputStream.write(pps);
         outputStream.flush();
+        count +=1;
 
         ByteBuffer inputBuffer = ByteBuffer.allocate(1024 * 1024); // 创建 1MB 缓冲区用于读取 H.264 帧
-        int count =0;
+
         while (count<100) {
             int sampleSize = extractor.readSampleData(inputBuffer, 0);
             if (sampleSize < 0) {

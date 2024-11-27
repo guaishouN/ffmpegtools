@@ -25,6 +25,7 @@ public class AssetsVideoStreamDecoder {
     private final ArrayBlockingQueue<byte[]> queue = new ArrayBlockingQueue<>(1000);
     private int decodeCount =0 ;
     public AssetsVideoStreamDecoder(String host, int port) throws Exception {
+//        GysoFfmpegTools.getInstance().mainStart();
         new Thread(() -> {
             try {
                 Thread.sleep(1000);
