@@ -1,81 +1,83 @@
 #include <jni.h>
 #include <string>
 #include "ffTool.h"
-extern "C"{
-    #include <libavcodec/avcodec.h>
-    #include <stdint.h>
-    #include <libavutil/log.h>
-    #include <libavutil/error.h>
-    #include <libavutil/mem.h>
-    #include <libavutil/pixdesc.h>
+
+extern "C" {
+#include <libavcodec/avcodec.h>
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <stdint.h>
+#include <libavutil/log.h>
+#include <libavutil/error.h>
+#include <libavutil/mem.h>
+#include <libavutil/pixdesc.h>
+#include <cstdint>
+#include <cstring>
 }
 #define LOG_TAG "NDKLearnApp"
-#include "FFMPEGtools.h"
+#include "GysoTools.h"
+#define FF_INPUT_BUFFER_PADDING_SIZE 32
 
-FFMPEGtools * ff = new FFMPEGtools();
+GysoTools *ff = new GysoTools();
 
-int parse_sps(const uint8_t *sps_data, size_t sps_size, int *width, int *height) {
+int parse_sps(uint8_t *sps_data, size_t sps_size, int *width, int *height) {
+    LOGD("parse_sps %d", 11);
     if (!sps_data || sps_size == 0 || !width || !height) {
         LOGDD("Invalid input parameters");
         return -1;
     }
-
-    // 初始化 FFmpeg 编解码器解析器
-    AVCodecParserContext *parser = av_parser_init(AV_CODEC_ID_H264);
-    if (!parser) {
-        LOGDD("Failed to initialize parser");
-        return -1;
+    const AVCodec * codec = avcodec_find_decoder(AV_CODEC_ID_H264);
+    if (codec != NULL)
+    {
+        AVCodecContext* ctx = avcodec_alloc_context3(codec);
+        int got_frame = 0;
+        AVPacket pkt;
+        av_new_packet(&pkt, 200);
+        pkt.data = sps_data;
+        pkt.size = sizeof(sps_data);
+        AVFrame* frame = av_frame_alloc();
+//        avcodec_(ctx, frame, &got_frame, &pkt);
+        LOGD("parse_sps final result size: %dx%d\n", ctx->width, ctx->height);
+        avcodec_free_context(&ctx);
+        av_free(ctx);
     }
-
-    // 初始化编解码器上下文
-    AVCodecContext *codec_ctx = avcodec_alloc_context3(NULL);
-    if (!codec_ctx) {
-        LOGDD("Failed to allocate codec context");
-        av_parser_close(parser);
-        return -1;
-    }
-
-    // 解析 SPS 数据
-    const uint8_t *data = sps_data;
-    int consumed = av_parser_parse2(
-            parser, codec_ctx,
-            NULL, NULL,        // 输出缓冲区 (我们只解析，不需要解码)
-            data, sps_size,    // 输入 SPS 数据
-            AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0
-    );
-
-    if (consumed <= 0) {
-        LOGDD("Failed to parse SPS data");
-        av_parser_close(parser);
-        avcodec_free_context(&codec_ctx);
-        return -1;
-    }
-
-    // 提取宽度和高度
-    *width = codec_ctx->width;
-    *height = codec_ctx->height;
-    LOGDD("Parsed width: %d, height: %d", *width, *height);
-
-    // 释放资源
-    av_parser_close(parser);
-    avcodec_free_context(&codec_ctx);
-
     return 0;
 }
 
-
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_gyso_ndklearnapplication_GysoFfmpegTools_parseSPS(JNIEnv *env, jobject thiz,
+                                                           jbyteArray sps_data,
+                                                           jintArray dimensions) {
+    LOGD("Java_com_gyso_ndklearnapplication_GysoFfmpegTools_parseSPS 1 %s", "");
+    jsize sps_size = env->GetArrayLength(sps_data);
+    jbyte *sps_data_ptr = env->GetByteArrayElements(sps_data, nullptr);
+    jsize dim_size = env->GetArrayLength(dimensions);
+    if (dim_size < 2) {
+        env->ReleaseByteArrayElements(sps_data, sps_data_ptr, 0);
+        return -1;
+    }
+    LOGD("Java_com_gyso_ndklearnapplication_GysoFfmpegTools_parseSPS 2 %d", dim_size);
+    jint *dim_ptr = env->GetIntArrayElements(dimensions, nullptr);
+    int width = 0, height = 0;
+    int result = parse_sps(reinterpret_cast<uint8_t *>(sps_data_ptr), sps_size, &width, &height);
+    dim_ptr[0] = width;
+    dim_ptr[1] = height;
+    env->ReleaseByteArrayElements(sps_data, sps_data_ptr, 0);
+    env->ReleaseIntArrayElements(dimensions, dim_ptr, 0);
+    return result;
+}
 
 extern "C"
 JNIEXPORT jstring JNICALL
 Java_com_gyso_ndklearnapplication_GysoFfmpegTools_mainTest(JNIEnv *env, jobject thiz) {
     std::string hello = "Hello from C++ main test";
     int rs = ff->sum(3);
-    const char* avInfo = av_version_info();
+    const char *avInfo = av_version_info();
     hello += ", av_version_info: ";
     hello += avInfo;
     hello += ", sum result: ";
     hello += std::to_string(rs);
     LOGD("Generated string: %s", hello.c_str());
-//    parse_sps(ds)
     return env->NewStringUTF(hello.c_str());
 }

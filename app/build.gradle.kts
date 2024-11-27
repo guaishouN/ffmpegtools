@@ -16,9 +16,14 @@ android {
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        externalNativeBuild {
+            cmake {
+                cppFlags("-fPIC")
+            }
+        }
         ndk {
             //noinspection ChromeOsAbiSupport "x86", "x86_64", "armeabi",
-            abiFilters += listOf("armeabi-v7a","arm64-v8a", "x86")
+            abiFilters += listOf("armeabi-v7a","arm64-v8a")
         }
     }
 
