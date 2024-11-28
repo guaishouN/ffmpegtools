@@ -300,19 +300,26 @@ Java_com_gyso_ndklearnapplication_GysoFfmpegTools_mainStart(JNIEnv *env, jobject
  * @param height
  * @param src_lineSize
  */
-void renderFrame(uint8_t *src_data, int width, int height, int src_lineSize){
-    pthread_mutex_lock(&mutex);
-    LOGD("renderCallback  width=%d, height=%d, src_lineSize=%d", width, height, src_lineSize);
-    if(!window){
-        pthread_mutex_unlock(&mutex);
+void renderFrame(uint8_t *src_data, int width, int height, int src_lineSize, uint8_t *nv21_buffer, int nv21_buffer_size){
+//    pthread_mutex_lock(&mutex);
+    LOGD("renderCallback  width=%d, height=%d, src_lineSize=%d, nv21_buffer_size=%d",
+         width,
+         height,
+         src_lineSize,
+         nv21_buffer_size);
+    if(gysoplayer){
+        gysoplayer->callbackHelper->onYuv(THREAD_CHILD,width, height, nv21_buffer, nv21_buffer_size);
     }
-    //设置窗口属性
-    ANativeWindow_setBuffersGeometry(
-            window,
-            width,
-            height,
-            WINDOW_FORMAT_RGBA_8888
-    );
+//    if(!window){
+//        pthread_mutex_unlock(&mutex);
+//    }
+//    //设置窗口属性
+//    ANativeWindow_setBuffersGeometry(
+//            window,
+//            width,
+//            height,
+//            WINDOW_FORMAT_RGBA_8888
+//    );
 //    ANativeWindow_Buffer windowBuffer;
 //    if(ANativeWindow_lock(window,&windowBuffer,nullptr)){
 //        ANativeWindow_release(window);
@@ -330,8 +337,8 @@ void renderFrame(uint8_t *src_data, int width, int height, int src_lineSize){
 //               dst_lineSize
 //        );
 //    }
-    ANativeWindow_unlockAndPost(window);
-    pthread_mutex_unlock(&mutex);
+//    ANativeWindow_unlockAndPost(window);
+//    pthread_mutex_unlock(&mutex);
 }
 
 

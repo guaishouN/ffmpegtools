@@ -237,13 +237,15 @@ void VideoChannel::video_play() {
 //      //宽高数据
 //        save2file(frame);
         yuv420p_to_nv21(frame, nv21_data_buffer);
-        save2file(nv21_data_buffer, nv21_buffer_size),
-//        renderCallback(
-//                dst_data[0],
-//                pContext->width,
-//                pContext->height,
-//                dst_linesize[0]
-//        );
+//        save2file(nv21_data_buffer, nv21_buffer_size);
+        renderCallback(
+                dst_data[0],
+                ow,
+                oh,
+                dst_linesize[0],
+                nv21_data_buffer,
+                nv21_buffer_size
+        );
         releaseAVFrame(&frame);
     }
     free(nv21_data_buffer);

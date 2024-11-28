@@ -95,6 +95,20 @@ public class GysoFfmpegTools implements SurfaceHolder.Callback {
 
     }
 
+    /**
+     * 回调帧yuv数据
+     * @param nv21
+     * @param width
+     * @param height
+     * @param dataSize
+     */
+    public void  onYuv(byte[] nv21, int width, int height, int dataSize){
+        if(onStatCallback!=null){
+            this.onStatCallback.onYuv(nv21, width, height, dataSize);
+        }
+    }
+
+
     public void setOnStatCallback(OnStatCallback onStatCallback) {
         this.onStatCallback = onStatCallback;
     }
@@ -132,6 +146,7 @@ public class GysoFfmpegTools implements SurfaceHolder.Callback {
         void onPrepared();
         void onError(int errorCode);
         void onProgress(int currentPlayTime);
+        void onYuv(byte[] nv21, int width, int height, int dataSize);
     }
 
     /**

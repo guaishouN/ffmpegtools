@@ -93,6 +93,10 @@ class MainActivity : AppCompatActivity() {
             override fun onProgress(currentPlayTime: Int) {
 
             }
+
+            override fun onYuv(nv21: ByteArray?, width: Int, height: Int, dataSize:Int) {
+                Log.d(TAG, "onYuv: $width $height $dataSize ${nv21!!.size}")
+            }
         })
     }
 

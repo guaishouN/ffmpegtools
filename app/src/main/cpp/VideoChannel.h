@@ -11,7 +11,7 @@ extern "C"{
 
 #include "BaseChannel.h"
 #include "macro.h"
-typedef void (*RenderCallback)(uint8_t *,int,int,int);
+typedef void (*RenderCallback)(uint8_t *,int,int,int,uint8_t *,int);
 class VideoChannel : public BaseChannel{
     public:
          VideoChannel(int stream_index,AVCodecContext *pContext,AVRational time_base, int fps);

@@ -4,6 +4,7 @@
 
 #ifndef GYSOFFMPEGAPPLICATION_GYSOPLAYER_H
 #define GYSOFFMPEGAPPLICATION_GYSOPLAYER_H
+
 #include "VideoChannel.h"
 #include "CallbackHelper.h"
 #include <android/log.h>
@@ -12,7 +13,7 @@
 #include "macro.h"
 #include <pthread.h>
 
-extern "C"{
+extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libswscale/swscale.h>
 #include <libavutil/imgutils.h>
@@ -23,10 +24,14 @@ extern "C"{
 
 
 class GySoPlayer {
-   friend void *task_stop(void *args);
+    friend void *task_stop(void *args);
+
 public:
-    GySoPlayer(const char *string,CallbackHelper *callbackHelper);
+    GySoPlayer(const char *string, CallbackHelper *callbackHelper);
+
     ~GySoPlayer();
+
+    CallbackHelper *callbackHelper;
 
     void prepare();
 
@@ -45,12 +50,11 @@ public:
     void stop();
 
 private:
-    char * videoPath;
+    char *videoPath;
     bool isPlaying;
     VideoChannel *videoChannel;
     pthread_t pThread_prepare;
     pthread_t pThread_start;
-    CallbackHelper *callbackHelper;
     AVFormatContext *avFormatContext;
     RenderCallback renderCallback;
     int duration;
