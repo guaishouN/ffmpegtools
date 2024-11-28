@@ -1,7 +1,7 @@
 //
 // Created by GuaishouN on 2020/4/25.
 //
-
+#include "android/log.h"
 #ifndef GYSOFFMPEGAPPLICATION_MACRO_H
 #define GYSOFFMPEGAPPLICATION_MACRO_H
 #define LOGD(FORMAT,...) __android_log_print(ANDROID_LOG_DEBUG, "IMS_FFMPEG", FORMAT, ##__VA_ARGS__)
