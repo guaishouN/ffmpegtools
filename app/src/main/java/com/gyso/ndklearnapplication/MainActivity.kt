@@ -110,7 +110,10 @@ class MainActivity : AppCompatActivity() {
                 if ((width > 0 && height > 0) && (vWidth != width || vHeight != height)) {
                     binding.yuvNv21View.setBuffer(ByteBuffer.allocate(dataSize), width, height)
                 }
-                binding.yuvNv21View.newDataArrived(nv21)
+//                binding.yuvNv21View.newDataArrived(nv21)
+                runOnUiThread {
+                    binding.yuvNv21BitmapView.setImageBitmap(BitmapUtils.getBitmap(ByteBuffer.wrap(nv21),width,height,0 ))
+                }
             }
         })
     }
