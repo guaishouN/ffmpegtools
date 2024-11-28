@@ -302,11 +302,11 @@ Java_com_gyso_ndklearnapplication_GysoFfmpegTools_mainStart(JNIEnv *env, jobject
  */
 void renderFrame(uint8_t *src_data, int width, int height, int src_lineSize, uint8_t *nv21_buffer, int nv21_buffer_size){
 //    pthread_mutex_lock(&mutex);
-    LOGD("renderCallback  width=%d, height=%d, src_lineSize=%d, nv21_buffer_size=%d",
-         width,
-         height,
-         src_lineSize,
-         nv21_buffer_size);
+//    LOGD("renderCallback  width=%d, height=%d, src_lineSize=%d, nv21_buffer_size=%d",
+//         width,
+//         height,
+//         src_lineSize,
+//         nv21_buffer_size);
     if(gysoplayer){
         gysoplayer->callbackHelper->onYuv(THREAD_CHILD,width, height, nv21_buffer, nv21_buffer_size);
     }

@@ -1,7 +1,6 @@
 package com.gyso.ndklearnapplication
 
 import android.annotation.SuppressLint
-import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
@@ -10,22 +9,22 @@ import android.os.HandlerThread
 import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import com.gyso.ndklearnapplication.databinding.ActivityMainBinding
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import java.io.File
+import java.nio.ByteBuffer
 
 class MainActivity : AppCompatActivity() {
     lateinit var permissionUtil: PermissionUtil
     val handlerThread = HandlerThread("handler_thread")
     private lateinit var binding: ActivityMainBinding
     private lateinit var gysoFfmpegTools: GysoFfmpegTools
-    companion object{
-        const val TAG= "MainActivity"
+    private var vWidth = -1
+    private var vHeight = -1
+
+    companion object {
+        const val TAG = "MainActivity"
     }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         handlerThread.start()
@@ -48,16 +47,26 @@ class MainActivity : AppCompatActivity() {
         }
 //        binding.sampleText.text = GysoFfmpegTools.instance.mainTest()
         val myHandler = Handler(handlerThread.looper) { false }
-        myHandler.post{
-//            AssetsVideoStreamDecoder("127.0.0.1", 8999)
-//            GysoFfmpegTools("").mainStart()
+        myHandler.post {
             prepareVideo()
         }
     }
 
+
+    override fun onResume() {
+        super.onResume()
+//        binding.yuvNv21View.onResume()
+    }
+
+    override fun onPause() {
+        super.onPause()
+//        binding.yuvNv21View.onPause()
+    }
+
     private fun prepareVideo() {
         Log.d(TAG, "prepareVideo: ")
-        val filePath = Environment.getExternalStorageDirectory().toString() + File.separator + "demo.mp4"
+        val filePath =
+            Environment.getExternalStorageDirectory().toString() + File.separator + "demo.mp4"
         val file = File(filePath)
         if (!file.exists()) {
             Log.e(TAG, "playVideo: file not exist")
@@ -76,6 +85,8 @@ class MainActivity : AppCompatActivity() {
                         Toast.LENGTH_SHORT
                     ).show()
                 }
+                binding.yuvNv21View
+                binding.yuvNv21View.setBuffer(ByteBuffer.allocate(460800), 480, 640)
                 gysoFfmpegTools.start()
             }
 
@@ -94,8 +105,12 @@ class MainActivity : AppCompatActivity() {
 
             }
 
-            override fun onYuv(nv21: ByteArray?, width: Int, height: Int, dataSize:Int) {
-                Log.d(TAG, "onYuv: $width $height $dataSize ${nv21!!.size}")
+            override fun onYuv(nv21: ByteArray?, width: Int, height: Int, dataSize: Int) {
+                Log.d(TAG, "onYuv: $width $height ${nv21!!.size}")
+                if ((width > 0 && height > 0) && (vWidth != width || vHeight != height)) {
+                    binding.yuvNv21View.setBuffer(ByteBuffer.allocate(dataSize), width, height)
+                }
+                binding.yuvNv21View.newDataArrived(nv21)
             }
         })
     }
