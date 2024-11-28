@@ -105,6 +105,17 @@ public class AssetsVideoStreamPusher {
         ByteBuffer spsBuffer = inputFormat.getByteBuffer("csd-0");  // SPS
         ByteBuffer ppsBuffer = inputFormat.getByteBuffer("csd-1");  // PPS
         int count =0;
+        //发送 宽高
+        int width = inputFormat.getInteger(MediaFormat.KEY_WIDTH);
+        int height = inputFormat.getInteger(MediaFormat.KEY_HEIGHT);
+        ByteBuffer bf = ByteBuffer.allocate(4+1+4+4);//0x00 0x00 0x00 0x01 0xff int1_bytes int2_bytes
+        bf.put(new byte[]{0x00,0x00,0x00,0x01,(byte)0xFF});
+        bf.putInt(width);
+        bf.putInt(height);
+        Log.i(TAG, "startStreamingMp4: width="+width+", height="+height);
+        outputStream.write(bf.array());
+        outputStream.flush();
+
         // 发送 SPS 和 PPS 数据帧
         assert spsBuffer != null;
         byte[] sps = new byte[spsBuffer.remaining()];
@@ -124,7 +135,7 @@ public class AssetsVideoStreamPusher {
 
         ByteBuffer inputBuffer = ByteBuffer.allocate(1024 * 1024); // 创建 1MB 缓冲区用于读取 H.264 帧
 
-        while (count<100) {
+        while (count<10) {
             int sampleSize = extractor.readSampleData(inputBuffer, 0);
             if (sampleSize < 0) {
                 break;

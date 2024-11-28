@@ -3,6 +3,7 @@ package com.gyso.ndklearnapplication;
 import android.media.MediaCodec;
 import android.media.MediaFormat;
 import android.util.Log;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -15,33 +16,16 @@ import java.util.concurrent.ArrayBlockingQueue;
 public class AssetsVideoStreamDecoder {
     private static final String TAG = "H264TEST";
     private static final String VIDEO_MIME_TYPE = "video/avc";
-    private final static Boolean DEBUG = true;
-    private static final int WIDTH = 640;  // 视频宽度
-    private static final int HEIGHT = 360;  // 视频高度
+    private int width = 640;  // 视频宽度
+    private int height = 360;  // 视频高度
     private MediaCodec mediaCodec;
     private Socket socket;
     private byte[] sps = null;
     private InputStream inputStream;
     private final ArrayBlockingQueue<byte[]> queue = new ArrayBlockingQueue<>(1000);
     private int decodeCount =0 ;
-    public AssetsVideoStreamDecoder(String host, int port) throws Exception {
-//        GysoFfmpegTools.getInstance().mainStart();
-        new Thread(() -> {
-            try {
-                Thread.sleep(1000);
-                socket = new Socket(host, port);
-                inputStream = socket.getInputStream();
-                byte[] buffer = new byte[1024*1024];
-                int bytesRead;
-                while ((bytesRead = inputStream.read(buffer)) != -1) {
-                    byte[] nal = new byte[bytesRead];
-                    System.arraycopy(buffer, 0, nal, 0, bytesRead);
-                    queue.put(nal);
-                }
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }).start();
+    public AssetsVideoStreamDecoder(String host, int port){
+        loopReceive(host,port);
         new Thread(() -> {
             try {
                 while (true){
@@ -54,14 +38,42 @@ public class AssetsVideoStreamDecoder {
         }).start();
     }
 
+    private void loopReceive(final String host, final int port){
+        new Thread(() -> {
+            try {
+                Thread.sleep(2000);
+                Log.i(TAG, "loopReceive: start!!!");
+                socket = new Socket(host, port);
+                inputStream = socket.getInputStream();
+                byte[] buffer = new byte[1024*1024];
+                int bytesRead;
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    byte[] nal = new byte[bytesRead];
+                    System.arraycopy(buffer, 0, nal, 0, bytesRead);
+                    queue.put(nal);
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "loopReceive: error on receive data!!!", e);
+                stopDecoding();
+                loopReceive(host,port);
+            }
+        }).start();
+    }
+
+
     public void doDecode(byte[] buffer) throws Exception {
         int bytesRead = buffer.length;
         Log.i(TAG, "doDecode: len=["+bytesRead+"]"+Arrays.toString(buffer));
-        if(buffer[4]==0x67){//sps
+        if(buffer[4]==(byte)0xFF){
+            ByteBuffer bf = ByteBuffer.wrap(buffer);
+            bf.get(new byte[4]);//header
+            bf.get();//id
+            width = bf.getInt();
+            height = bf.getInt();
+            Log.i(TAG, "doDecode: got width="+width+"  height="+height);
+        } else if(buffer[4]==0x67){//sps
             sps = new byte[bytesRead];
             System.arraycopy(buffer, 0, sps, 0, bytesRead);
-            int [] demi = new int[2];
-            GysoFfmpegTools.getInstance().parseSPS(sps, demi);
             Log.i(TAG, "read sps len["+bytesRead+"]"+ Arrays.toString(sps));
         } else if (buffer[4]==0x68) {//pps
             byte[] pps = new byte[bytesRead];
@@ -77,9 +89,7 @@ public class AssetsVideoStreamDecoder {
     private void configureDecoderWithSpsPps(byte[] sps, byte[] pps) {
         try {
             mediaCodec = MediaCodec.createDecoderByType(VIDEO_MIME_TYPE);
-            MediaFormat format = MediaFormat.createVideoFormat(VIDEO_MIME_TYPE, WIDTH, HEIGHT);
-
-
+            MediaFormat format = MediaFormat.createVideoFormat(VIDEO_MIME_TYPE, width, height);
             format.setByteBuffer("csd-0", ByteBuffer.wrap(sps));  // SPS
             format.setByteBuffer("csd-1", ByteBuffer.wrap(pps));  // PPS
             mediaCodec.configure(format, null, null, 0);
@@ -131,7 +141,7 @@ public class AssetsVideoStreamDecoder {
         // 在这里处理YUV数据，例如将其保存为文件或显示到屏幕上
         Log.d(TAG, "count ={"+decodeCount+"}YUV Data Length: " + yuvData.length);
         final File FILES_DIR = NdkLearnApplication.appContext.getFilesDir();
-        File outputFile = new File(FILES_DIR, String.format(Locale.CHINESE, "mmframe-%02d.png", decodeCount));
+        File outputFile = new File(FILES_DIR, String.format(Locale.CHINESE, "mmframe-%02d.yuv", decodeCount));
         try {
             FileOutputStream outputStream = new FileOutputStream(outputFile);
             outputStream.write(yuvData);
@@ -145,10 +155,17 @@ public class AssetsVideoStreamDecoder {
 
     public void stopDecoding() {
         try {
-            mediaCodec.stop();
-            mediaCodec.release();
-            inputStream.close();
-            socket.close();
+            queue.clear();
+            if(mediaCodec!=null){
+                mediaCodec.stop();
+                mediaCodec.release();
+            }
+            if (inputStream!=null){
+                inputStream.close();
+            }
+            if(socket!=null){
+                socket.close();
+            }
         } catch (Exception e) {
             Log.e(TAG, "关闭解码器或Socket失败: " + e.getMessage());
         }
