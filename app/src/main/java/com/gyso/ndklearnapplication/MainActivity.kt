@@ -3,14 +3,12 @@ package com.gyso.ndklearnapplication
 import android.annotation.SuppressLint
 import android.os.Build
 import android.os.Bundle
-import android.os.Environment
 import android.os.Handler
 import android.os.HandlerThread
 import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.gyso.ndklearnapplication.databinding.ActivityMainBinding
-import java.io.File
 import java.nio.ByteBuffer
 
 class MainActivity : AppCompatActivity() {
@@ -65,29 +63,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun prepareVideo() {
         Log.d(TAG, "prepareVideo: ")
-        val filePath =
-            Environment.getExternalStorageDirectory().toString() + File.separator + "demo.mp4"
-        val file = File(filePath)
-        if (!file.exists()) {
-            Log.e(TAG, "playVideo: file not exist")
-            return
-        }
-        gysoFfmpegTools = GysoFfmpegTools("tcp://172.26.4.37:8999")
-        //gySoPlayer = new GySoPlayer("rtmp://59.111.90.142/myapp/");
-        gysoFfmpegTools.setSurfaceView(binding.surfaceview)
-        gysoFfmpegTools.prepare()
+        gysoFfmpegTools = GysoFfmpegTools()
         gysoFfmpegTools.setOnStatCallback(object : GysoFfmpegTools.OnStatCallback {
             override fun onPrepared() {
-                runOnUiThread {
-                    Toast.makeText(
-                        this@MainActivity,
-                        "准备播放完毕",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
                 binding.yuvNv21View
                 binding.yuvNv21View.setBuffer(ByteBuffer.allocate(460800), 480, 640)
-                gysoFfmpegTools.start()
             }
 
             override fun onError(errorCode: Int) {
@@ -98,11 +78,6 @@ class MainActivity : AppCompatActivity() {
                         Toast.LENGTH_SHORT
                     ).show()
                 }
-            }
-
-            @SuppressLint("SetTextI18n")
-            override fun onProgress(currentPlayTime: Int) {
-
             }
 
             override fun onYuv(nv21: ByteArray?, width: Int, height: Int, dataSize: Int) {
@@ -117,5 +92,4 @@ class MainActivity : AppCompatActivity() {
             }
         })
     }
-
 }

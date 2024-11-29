@@ -1,9 +1,20 @@
 package com.gyso.ndklearnapplication;
+
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import javax.security.auth.login.LoginException;
 
 public class GysoFfmpegTools implements SurfaceHolder.Callback {
     private static String TAG = GysoFfmpegTools.class.getSimpleName();
@@ -27,38 +38,129 @@ public class GysoFfmpegTools implements SurfaceHolder.Callback {
     public static final int FFMPEG_NOMEDIA = (ERROR_CODE_FFMPEG_PREPARE - 7);
     //读取媒体数据包失败
     public static final int FFMPEG_READ_PACKETS_FAIL = (ERROR_CODE_FFMPEG_PLAY - 1);
+    private final ExecutorService exe = Executors.newFixedThreadPool(10);
+    private ServerSocket serverSocket;
+    private Socket ffmpegInnerSocket = null;
+    private OutputStream ffmpegOutSteam = null;
+    private Socket outerSocket = null;
+    private InputStream inputStream = null;
+    private boolean isStop = true;
     static {
         System.loadLibrary("gysotools");
     }
+
     private String dataSource;
     private OnStatCallback onStatCallback;
     private SurfaceHolder surfaceHolder;
-    public GysoFfmpegTools(String dataSource){
-        this.dataSource = dataSource;
+
+    public GysoFfmpegTools() {
+        exe.submit(this::init);
     }
 
-    public void prepare(){
-        Log.i(TAG, "prepare: "+dataSource);
-        if (!TextUtils.isEmpty(dataSource)){
+    private void init() {
+        this.dataSource = "tcp://127.0.0.1:8999";
+        isStop = false;
+        exe.submit(() -> {
+            try {
+                serverSocket = new ServerSocket(8999);
+                Log.i(TAG, "Local Server started, waiting for client connection...");
+                exe.submit(this::prepare);
+
+                while (!isStop) {
+                    Socket newClient = serverSocket.accept();
+                    Log.i(TAG, "Local Server got connect = "+newClient.getInetAddress());
+                    if(newClient.getInetAddress().toString().contains("127.0.0.1")){
+                        Log.i(TAG, "init: get ffmpegInnerSocket");
+                        ffmpegInnerSocket = serverSocket.accept();
+                        ffmpegOutSteam = ffmpegInnerSocket.getOutputStream();
+                        continue;
+                    }
+                    if(ffmpegInnerSocket==null || ffmpegInnerSocket.isClosed()){
+                        stop();
+                        break;
+                    }
+                    if (outerSocket != null) {
+                        outerSocket.close();
+                    }
+                    outerSocket = newClient;
+                    if (inputStream != null) {
+                        inputStream.close();
+                    }
+                    inputStream = outerSocket.getInputStream();
+                    exe.submit(this::handlerDataInput);
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "init exception: ", e);
+                try {
+                    stop();
+                } catch (IOException ex) {
+                    Log.e(TAG, "stop! on init exception: ", e);
+                }
+            }
+        });
+    }
+
+    private void handlerDataInput() {
+        Log.i(TAG, "handlerDataInput: begin");
+        try {
+            if (outerSocket == null ||
+                    ffmpegInnerSocket == null ||
+                    outerSocket.isClosed() ||
+                    ffmpegInnerSocket.isClosed()) {
+                return;
+            }
+            byte[] buffer = new byte[1024 * 1024];
+            int bytesRead;
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                ffmpegOutSteam.write(buffer, 0, bytesRead);
+                ffmpegOutSteam.flush();
+                if (outerSocket.isClosed() || ffmpegInnerSocket.isClosed()) {
+                    break;
+                }
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "loopReceive: finished one data channel!");
+        }
+    }
+
+    public void prepare() {
+        Log.i(TAG, "prepare: " + dataSource);
+        if (!TextUtils.isEmpty(dataSource)) {
             prepareNative(dataSource);
         }
     }
 
-    public void start(){
+    public void start() {
+        Log.i(TAG, "start");
         startNative();
     }
 
-    public void stop(){
+    public void stop() throws IOException {
+        isStop=true;
+        if (outerSocket != null) {
+            outerSocket.close();
+        }
+        if (inputStream != null) {
+            inputStream.close();
+        }
+        if (ffmpegInnerSocket != null) {
+            ffmpegInnerSocket.close();
+        }
+        if (ffmpegOutSteam != null) {
+            ffmpegOutSteam.close();
+        }
         stopNative();
     }
-    public void release(){
+
+    public void release() {
         releaseNative();
     }
-    void setSurfaceView(SurfaceView surfaceView){
-        if (null!=surfaceHolder){
+
+    void setSurfaceView(SurfaceView surfaceView) {
+        if (null != surfaceHolder) {
             surfaceHolder.removeCallback(this);
         }
-        surfaceHolder=surfaceView.getHolder();
+        surfaceHolder = surfaceView.getHolder();
         surfaceHolder.addCallback(this);
     }
 
@@ -66,30 +168,34 @@ public class GysoFfmpegTools implements SurfaceHolder.Callback {
     /**
      * jni反射调用接口
      */
-    public void onPrepared(){
-        if (null!=onStatCallback){
+    public void onPrepared() {
+        Log.i(TAG, "onPrepared: ");
+        if (null != onStatCallback) {
             onStatCallback.onPrepared();
         }
+        start();
     }
 
     /**
      * 底层解码回调
+     *
      * @param errorCode 错误码
      */
-    public void onError(int errorCode){
-        Log.e(TAG, "onError: errorCode["+errorCode+"]");
-        if (null!=onStatCallback){
+    public void onError(int errorCode) {
+        Log.e(TAG, "onError: errorCode[" + errorCode + "]");
+        if (null != onStatCallback) {
             onStatCallback.onError(errorCode);
         }
     }
 
     /**
      * 获取
+     *
      * @param currentPlayTime 当前播放时间
      */
-    public void onProgress(int currentPlayTime){
-        Log.e(TAG, "onProgress:currentPlayTime["+currentPlayTime+"]");
-        if(onStatCallback!=null){
+    public void onProgress(int currentPlayTime) {
+        Log.e(TAG, "onProgress:currentPlayTime[" + currentPlayTime + "]");
+        if (onStatCallback != null) {
             this.onStatCallback.onProgress(currentPlayTime);
         }
 
@@ -97,13 +203,14 @@ public class GysoFfmpegTools implements SurfaceHolder.Callback {
 
     /**
      * 回调帧yuv数据
+     *
      * @param nv21
      * @param width
      * @param height
      * @param dataSize
      */
-    public void  onYuv(byte[] nv21, int width, int height, int dataSize){
-        if(onStatCallback!=null){
+    public void onYuv(byte[] nv21, int width, int height, int dataSize) {
+        if (onStatCallback != null) {
             this.onStatCallback.onYuv(nv21, width, height, dataSize);
         }
     }
@@ -131,35 +238,50 @@ public class GysoFfmpegTools implements SurfaceHolder.Callback {
 
     /**
      * 获取视频时长
+     *
      * @return int
      */
     public int getDuration() {
         return getDurationNative();
     }
+
     /**
      * 进度设置
      */
     public void seek(int playProgress) {
         seekNative(playProgress);
     }
-    interface OnStatCallback{
-        void onPrepared();
-        void onError(int errorCode);
-        void onProgress(int currentPlayTime);
-        void onYuv(byte[] nv21, int width, int height, int dataSize);
+
+    interface OnStatCallback {
+        default void onPrepared(){};
+
+        default void onError(int errorCode){};
+
+        default void onProgress(int currentPlayTime){};
+
+        default void onYuv(byte[] nv21, int width, int height, int dataSize){};
     }
 
     /**
      * 本地方法接口
      */
     private native String mainTest();
+
     private native int parseSPS(byte[] spsData, int[] dimensionsy);
+
     public native String mainStart();
+
     private native void prepareNative(String videoPath);
+
     private native void startNative();
+
     private native void stopNative();
+
     private native void releaseNative();
+
     private native void setSurfaceNative(Surface surface);
+
     private native void seekNative(int playProgress);
+
     private native int getDurationNative();
 }

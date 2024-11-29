@@ -385,15 +385,15 @@ extern "C"
 JNIEXPORT void JNICALL
 Java_com_gyso_ndklearnapplication_GysoFfmpegTools_setSurfaceNative(JNIEnv *env, jobject thiz,
                                                                  jobject surface) {
-    pthread_mutex_lock(&mutex);
-    //释放之前的显示窗口
-    if(window){
-        ANativeWindow_release(window);
-        window =0;
-    }
-    //创建新window
-    window = ANativeWindow_fromSurface(env,surface);
-    pthread_mutex_unlock(&mutex);
+//    pthread_mutex_lock(&mutex);
+//    //释放之前的显示窗口
+//    if(window){
+//        ANativeWindow_release(window);
+//        window =0;
+//    }
+//    //创建新window
+//    window = ANativeWindow_fromSurface(env,surface);
+//    pthread_mutex_unlock(&mutex);
 }
 
 extern "C"
