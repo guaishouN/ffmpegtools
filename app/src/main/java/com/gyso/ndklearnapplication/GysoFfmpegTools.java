@@ -65,20 +65,11 @@ public class GysoFfmpegTools implements SurfaceHolder.Callback {
                 serverSocket = new ServerSocket(8999);
                 Log.i(TAG, "Local Server started, waiting for client connection...");
                 exe.submit(this::prepare);
-
+                ffmpegInnerSocket = serverSocket.accept();
+                ffmpegOutSteam = ffmpegInnerSocket.getOutputStream();
                 while (!isStop) {
                     Socket newClient = serverSocket.accept();
                     Log.i(TAG, "Local Server got connect = "+newClient.getInetAddress());
-                    if(newClient.getInetAddress().toString().contains("127.0.0.1")){
-                        Log.i(TAG, "init: get ffmpegInnerSocket");
-                        ffmpegInnerSocket = serverSocket.accept();
-                        ffmpegOutSteam = ffmpegInnerSocket.getOutputStream();
-                        continue;
-                    }
-                    if(ffmpegInnerSocket==null || ffmpegInnerSocket.isClosed()){
-                        stop();
-                        break;
-                    }
                     if (outerSocket != null) {
                         outerSocket.close();
                     }
@@ -115,11 +106,12 @@ public class GysoFfmpegTools implements SurfaceHolder.Callback {
                 ffmpegOutSteam.write(buffer, 0, bytesRead);
                 ffmpegOutSteam.flush();
                 if (outerSocket.isClosed() || ffmpegInnerSocket.isClosed()) {
+                    Log.e(TAG, "handlerDataInput: outerSocket or ffmpegInnerSocket closed!!");
                     break;
                 }
             }
         } catch (Exception e) {
-            Log.w(TAG, "loopReceive: finished one data channel!");
+            Log.e(TAG, "loopReceive: finished one data channel!", e);
         }
     }
 
