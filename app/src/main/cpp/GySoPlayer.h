@@ -49,6 +49,8 @@ public:
 
     void stop();
 
+    void setFrameNum(int fNum);
+
 private:
     char *videoPath;
     bool isPlaying;

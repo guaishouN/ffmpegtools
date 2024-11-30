@@ -11,6 +11,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -44,7 +46,11 @@ public class GysoFfmpegTools implements SurfaceHolder.Callback {
     private OutputStream ffmpegOutSteam = null;
     private Socket outerSocket = null;
     private InputStream inputStream = null;
+
+    private Socket counterSocket = null;
+    private InputStream counterInput = null;
     private boolean isStop = true;
+
     static {
         System.loadLibrary("gysotools");
     }
@@ -61,6 +67,36 @@ public class GysoFfmpegTools implements SurfaceHolder.Callback {
         this.dataSource = "tcp://127.0.0.1:8999";
         isStop = false;
         exe.submit(() -> {
+            while (!isStop) {
+                ServerSocket countServer = null;
+                try {
+                    countServer = new ServerSocket(8998);
+                    while (!isStop){
+                        Socket newClient = countServer.accept();
+                        if (counterSocket!=null && !counterSocket.isClosed()){
+                            counterSocket.close();
+                        }
+                        if (counterInput!=null){
+                            counterInput.close();
+                        }
+                        counterSocket = newClient;
+                        counterInput = counterSocket.getInputStream();
+                        exe.submit(this::frameCounterDataInput);
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "init: ", e);
+                }finally {
+                    if (countServer !=null){
+                        try {
+                            countServer.close();
+                        } catch (IOException e) {
+                            Log.e(TAG, "init: ", e);
+                        }
+                    }
+                }
+            }
+        });
+        exe.submit(() -> {
             try {
                 serverSocket = new ServerSocket(8999);
                 Log.i(TAG, "Local Server started, waiting for client connection...");
@@ -69,7 +105,7 @@ public class GysoFfmpegTools implements SurfaceHolder.Callback {
                 ffmpegOutSteam = ffmpegInnerSocket.getOutputStream();
                 while (!isStop) {
                     Socket newClient = serverSocket.accept();
-                    Log.i(TAG, "Local Server got connect = "+newClient.getInetAddress());
+                    Log.i(TAG, "Local Server got connect = " + newClient.getInetAddress());
                     if (outerSocket != null) {
                         outerSocket.close();
                     }
@@ -90,6 +126,32 @@ public class GysoFfmpegTools implements SurfaceHolder.Callback {
             }
         });
     }
+
+    private void frameCounterDataInput() {
+        Log.w(TAG, "frameCounterDataInput: begin");
+        try {
+            byte[] buffer = new byte[4];
+            int bytesRead = 0;
+            while ((bytesRead = counterInput.read(buffer)) != -1){
+                int value = ((buffer[0] & 0xFF) << 24) | ((buffer[1] & 0xFF) << 16) | ((buffer[2] & 0xFF) << 8) | (buffer[3] & 0xFF);
+                Log.e(TAG, "frameCounterDataInput: "+bytesRead+"  result="+value);
+                setFrameCounter(value);
+            }
+                Log.e(TAG, " frameCounterDataInput finished");
+        } catch (IOException e) {
+            Log.e(TAG, "frameCounterDataInput: -----------", e);
+        } finally {
+            try {
+                if (counterInput != null) {
+                    counterInput.close();
+                }
+            } catch (IOException e) {
+                Log.e(TAG, "init: ", e);
+            }
+        }
+        Log.w(TAG, "frameCounterDataInput: end");
+    }
+
 
     private void handlerDataInput() {
         Log.i(TAG, "handlerDataInput: begin");
@@ -128,7 +190,7 @@ public class GysoFfmpegTools implements SurfaceHolder.Callback {
     }
 
     public void stop() throws IOException {
-        isStop=true;
+        isStop = true;
         if (outerSocket != null) {
             outerSocket.close();
         }
@@ -245,13 +307,25 @@ public class GysoFfmpegTools implements SurfaceHolder.Callback {
     }
 
     interface OnStatCallback {
-        default void onPrepared(){};
+        default void onPrepared() {
+        }
 
-        default void onError(int errorCode){};
+        ;
 
-        default void onProgress(int currentPlayTime){};
+        default void onError(int errorCode) {
+        }
 
-        default void onYuv(byte[] nv21, int width, int height, int dataSize){};
+        ;
+
+        default void onProgress(int currentPlayTime) {
+        }
+
+        ;
+
+        default void onYuv(byte[] nv21, int width, int height, int dataSize) {
+        }
+
+        ;
     }
 
     /**
@@ -262,6 +336,8 @@ public class GysoFfmpegTools implements SurfaceHolder.Callback {
     private native int parseSPS(byte[] spsData, int[] dimensionsy);
 
     public native String mainStart();
+
+    public native void setFrameCounter(int frameNum);
 
     private native void prepareNative(String videoPath);
 

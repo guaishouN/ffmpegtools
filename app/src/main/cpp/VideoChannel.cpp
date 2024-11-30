@@ -171,7 +171,7 @@ void yuv420p_to_nv21(AVFrame *frame, uint8_t *nv21_data) {
         }
     }
 }
-
+int frameNum=0;
 void VideoChannel::video_play() {
     //播放
     uint8_t *dst_data[4];
@@ -204,6 +204,17 @@ void VideoChannel::video_play() {
     size_t nv21_buffer_size = -1;
     while (isPlaying) {
         int ret = frames.pop(frame);
+        if(frameNum == 0){
+            decodeCounter=0;
+            continue;
+        }
+        decodeCounter++;
+        if(frameNum - decodeCounter > 4){
+            LOGE("drop !!! decodeCounter=%d    clientCounter=%d ",decodeCounter, frameNum)
+            continue;
+        } else{
+            LOGE("decodeCounter=%d    clientCounter=%d ",decodeCounter, frameNum)
+        }
         if (!ret) {
             continue;
         }
@@ -253,4 +264,12 @@ void VideoChannel::video_play() {
     isPlaying = 0;
     av_freep(&dst_data[0]);
     sws_freeContext(swsContext);
+}
+
+void VideoChannel::setFrameNum(int fNum) {
+    frameNum = fNum;
+}
+
+int VideoChannel::getFrameNum() {
+    return frameNum;
 }

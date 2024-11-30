@@ -263,3 +263,9 @@ void GySoPlayer::stop() {
     }
     pthread_create(&pid_stop, 0, task_stop, this);
 }
+
+void GySoPlayer::setFrameNum(int fNum){
+    if(videoChannel && videoChannel!= nullptr){
+        videoChannel->setFrameNum(fNum);
+    }
+}

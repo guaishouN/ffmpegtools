@@ -5,7 +5,8 @@
 #include <android/log.h>
 #include <android/native_window_jni.h>
 #include <zconf.h>
-extern "C"{
+
+extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavutil/imgutils.h>
 #include <libswresample/swresample.h>
@@ -23,6 +24,7 @@ extern "C"{
 #include <stdio.h>
 #include <stdlib.h>
 }
+
 #include "GySoPlayer.h"
 #include "macro.h"
 #include "GysoTools.h"
@@ -32,10 +34,12 @@ JavaVM *javaVM = 0;
 GySoPlayer *gysoplayer = 0;
 ANativeWindow *window = 0;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
 jint JNI_OnLoad(JavaVM *vm, void *unused) {
     javaVM = vm;
     return JNI_VERSION_1_6;
 }
+
 GysoTools *ff = new GysoTools();
 
 int play_h264_stream(const char *url) {
@@ -84,7 +88,8 @@ int play_h264_stream(const char *url) {
     }
 
     // Copy codec parameters from the stream to the codec context
-    ret = avcodec_parameters_to_context(codec_ctx, format_ctx->streams[video_stream_index]->codecpar);
+    ret = avcodec_parameters_to_context(codec_ctx,
+                                        format_ctx->streams[video_stream_index]->codecpar);
     if (ret < 0) {
         LOGD("Could not copy codec parameters to context\n");
         return -1;
@@ -107,7 +112,7 @@ int play_h264_stream(const char *url) {
     // Allocate frame for storing decoded data
     frame = av_frame_alloc();
     if (!frame) {
-        LOGD( "Could not allocate frame\n");
+        LOGD("Could not allocate frame\n");
         return -1;
     }
 
@@ -133,7 +138,8 @@ int play_h264_stream(const char *url) {
                 LOGD("Error receiving frame from decoder\n");
                 return -1;
             }
-            LOGD("Decoded frame with count:%d  width: %d, height: %d\n", count,frame->width, frame->height);
+            LOGD("Decoded frame with count:%d  width: %d, height: %d\n", count, frame->width,
+                 frame->height);
 //            LOGD("PTS: %lld, DTS: %lld", frame->pts, frame->pkt_dts);
 //            LOGD("Keyframe: %s", frame->key_frame ? "Yes" : "No");
             LOGD("Frame type: %c", av_get_picture_type_char(frame->pict_type));
@@ -153,7 +159,7 @@ int play_h264_stream(const char *url) {
 }
 
 int parse_sps(uint8_t *sps_data, size_t sps_size, int *width, int *height) {
-    LOGD("parse_sps: Start parsing SPS data %d", (int)sps_size);
+    LOGD("parse_sps: Start parsing SPS data %d", (int) sps_size);
     if (!sps_data || sps_size == 0 || !width || !height) {
         LOGD("Invalid input parameters");
         return -1;
@@ -196,7 +202,8 @@ int parse_sps(uint8_t *sps_data, size_t sps_size, int *width, int *height) {
         avcodec_free_context(&ctx);
         return -1;
     }
-    int ret1 = av_parser_parse2(parser, ctx, &pPacket->data, &pPacket->size,sps_data, sps_size, AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
+    int ret1 = av_parser_parse2(parser, ctx, &pPacket->data, &pPacket->size, sps_data, sps_size,
+                                AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
     // 发送数据包给解码器
     int ret = avcodec_send_packet(ctx, pPacket);
     if (ret < 0) {
@@ -229,9 +236,9 @@ int parse_sps(uint8_t *sps_data, size_t sps_size, int *width, int *height) {
     LOGD(
             "Frame %c (%d) pts %d dts %d",
             av_get_picture_type_char(frame->pict_type),
-            (int)(ctx->frame_num),
-            (int)(frame->pts),
-            (int)(frame->pkt_dts)
+            (int) (ctx->frame_num),
+            (int) (frame->pts),
+            (int) (frame->pkt_dts)
     );
 
     // 返回解析结果
@@ -247,7 +254,9 @@ int parse_sps(uint8_t *sps_data, size_t sps_size, int *width, int *height) {
 }
 
 extern "C"
-JNIEXPORT jint JNICALL
+JNIEXPORT jint
+
+JNICALL
 Java_com_gyso_ndklearnapplication_GysoFfmpegTools_parseSPS(JNIEnv *env, jobject thiz,
                                                            jbyteArray sps_data,
                                                            jintArray dimensions) {
@@ -271,7 +280,9 @@ Java_com_gyso_ndklearnapplication_GysoFfmpegTools_parseSPS(JNIEnv *env, jobject 
 }
 
 extern "C"
-JNIEXPORT jstring JNICALL
+JNIEXPORT jstring
+
+JNICALL
 Java_com_gyso_ndklearnapplication_GysoFfmpegTools_mainTest(JNIEnv *env, jobject thiz) {
     std::string hello = "Hello from C++ main test";
     int rs = ff->sum(3);
@@ -283,8 +294,11 @@ Java_com_gyso_ndklearnapplication_GysoFfmpegTools_mainTest(JNIEnv *env, jobject 
     LOGD("Generated string: %s", hello.c_str());
     return env->NewStringUTF(hello.c_str());
 }
+
 extern "C"
-JNIEXPORT jstring JNICALL
+JNIEXPORT jstring
+
+JNICALL
 Java_com_gyso_ndklearnapplication_GysoFfmpegTools_mainStart(JNIEnv *env, jobject thiz) {
     // TODO: implement mainStart()
     const char *url = "tcp://172.26.4.37:8999";
@@ -300,15 +314,17 @@ Java_com_gyso_ndklearnapplication_GysoFfmpegTools_mainStart(JNIEnv *env, jobject
  * @param height
  * @param src_lineSize
  */
-void renderFrame(uint8_t *src_data, int width, int height, int src_lineSize, uint8_t *nv21_buffer, int nv21_buffer_size){
+void renderFrame(uint8_t *src_data, int width, int height, int src_lineSize, uint8_t *nv21_buffer,
+                 int nv21_buffer_size) {
 //    pthread_mutex_lock(&mutex);
 //    LOGD("renderCallback  width=%d, height=%d, src_lineSize=%d, nv21_buffer_size=%d",
 //         width,
 //         height,
 //         src_lineSize,
 //         nv21_buffer_size);
-    if(gysoplayer){
-        gysoplayer->callbackHelper->onYuv(THREAD_CHILD,width, height, nv21_buffer, nv21_buffer_size);
+    if (gysoplayer) {
+        gysoplayer->callbackHelper->onYuv(THREAD_CHILD, width, height, nv21_buffer,
+                                          nv21_buffer_size);
     }
 //    if(!window){
 //        pthread_mutex_unlock(&mutex);
@@ -344,34 +360,58 @@ void renderFrame(uint8_t *src_data, int width, int height, int src_lineSize, uin
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_gyso_ndklearnapplication_GysoFfmpegTools_prepareNative(JNIEnv *env, jobject thiz,jstring path) {
-    const char * filePath = env->GetStringUTFChars(path,0);
-    CallbackHelper *callbackHelper =new CallbackHelper(javaVM,env,thiz);
+Java_com_gyso_ndklearnapplication_GysoFfmpegTools_prepareNative(JNIEnv
+                                                                *env,
+                                                                jobject thiz, jstring
+                                                                path) {
+    const char *filePath = env->GetStringUTFChars(path, 0);
+    CallbackHelper *callbackHelper = new CallbackHelper(javaVM, env, thiz);
     gysoplayer = new GySoPlayer(filePath, callbackHelper);
-    gysoplayer->setRenderCallback(renderFrame);
-    gysoplayer->prepare();
-    env->ReleaseStringUTFChars(path,filePath);
+    gysoplayer->
+            setRenderCallback(renderFrame);
+    gysoplayer->
+
+            prepare();
+
+    env->
+            ReleaseStringUTFChars(path, filePath
+    );
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_gyso_ndklearnapplication_GysoFfmpegTools_startNative(JNIEnv *env, jobject thiz) {
-    if(gysoplayer){
-        gysoplayer->start();
+Java_com_gyso_ndklearnapplication_GysoFfmpegTools_startNative(JNIEnv
+                                                              *env,
+                                                              jobject thiz
+) {
+    if (gysoplayer) {
+        gysoplayer->
+
+                start();
+
     }
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_gyso_ndklearnapplication_GysoFfmpegTools_stopNative(JNIEnv *env, jobject thiz) {
-    if(gysoplayer){
-        gysoplayer->stop();
+Java_com_gyso_ndklearnapplication_GysoFfmpegTools_stopNative(JNIEnv
+                                                             *env,
+                                                             jobject thiz
+) {
+    if (gysoplayer) {
+        gysoplayer->
+
+                stop();
+
     }
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_gyso_ndklearnapplication_GysoFfmpegTools_releaseNative(JNIEnv *env, jobject thiz) {
+Java_com_gyso_ndklearnapplication_GysoFfmpegTools_releaseNative(JNIEnv
+                                                                *env,
+                                                                jobject thiz
+) {
     pthread_mutex_lock(&mutex);
     if (window) {
         ANativeWindow_release(window);
@@ -383,8 +423,11 @@ Java_com_gyso_ndklearnapplication_GysoFfmpegTools_releaseNative(JNIEnv *env, job
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_gyso_ndklearnapplication_GysoFfmpegTools_setSurfaceNative(JNIEnv *env, jobject thiz,
-                                                                 jobject surface) {
+Java_com_gyso_ndklearnapplication_GysoFfmpegTools_setSurfaceNative(JNIEnv
+                                                                   *env,
+                                                                   jobject thiz,
+                                                                   jobject
+                                                                   surface) {
 //    pthread_mutex_lock(&mutex);
 //    //释放之前的显示窗口
 //    if(window){
@@ -398,20 +441,41 @@ Java_com_gyso_ndklearnapplication_GysoFfmpegTools_setSurfaceNative(JNIEnv *env, 
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_gyso_ndklearnapplication_GysoFfmpegTools_seekNative(JNIEnv *env,
-                                                           jobject thiz,
-                                                           jint play_progress) {
+Java_com_gyso_ndklearnapplication_GysoFfmpegTools_seekNative(JNIEnv
+                                                             *env,
+                                                             jobject thiz,
+                                                             jint
+                                                             play_progress) {
 
-    if(gysoplayer){
-        gysoplayer->seek(play_progress);
+    if (gysoplayer) {
+        gysoplayer->
+                seek(play_progress);
     }
 }
 extern "C"
-JNIEXPORT jint JNICALL
+JNIEXPORT jint
+JNICALL
 Java_com_gyso_ndklearnapplication_GysoFfmpegTools_getDurationNative(JNIEnv *env,
-                                                                  jobject thiz) {
-    if(gysoplayer){
-        return gysoplayer->getDuration();
+                                                                    jobject
+                                                                    thiz) {
+    if (gysoplayer) {
+        return gysoplayer->
+
+                getDuration();
+
     }
     return 0;
+}
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_gyso_ndklearnapplication_GysoFfmpegTools_setFrameCounter(JNIEnv
+                                                                  *env,
+                                                                  jobject thiz,
+                                                                  jint
+                                                                  framenum) {
+    LOGD("setFrameCounter %d", (int) framenum);
+    int tmp = (int) framenum;
+    if (gysoplayer) {
+        gysoplayer->setFrameNum(tmp);
+    }
 }
