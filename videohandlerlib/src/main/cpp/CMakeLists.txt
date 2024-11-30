@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22.1)
-project("ndklearnapplication")
+project("videohandlerlib")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(FFMPEG_DIR ${CMAKE_SOURCE_DIR}/ffmpeg)
 set(FFMPEG_LIB_DIR ${FFMPEG_DIR}/libs/${ANDROID_ABI})

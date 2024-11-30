@@ -257,10 +257,10 @@ extern "C"
 JNIEXPORT jint
 
 JNICALL
-Java_com_gyso_ndklearnapplication_GysoFfmpegTools_parseSPS(JNIEnv *env, jobject thiz,
+Java_com_gyso_videohandlerlib_GysoFfmpegTools_parseSPS(JNIEnv *env, jobject thiz,
                                                            jbyteArray sps_data,
                                                            jintArray dimensions) {
-    LOGD("Java_com_gyso_ndklearnapplication_GysoFfmpegTools_parseSPS 1 %s", "");
+    LOGD("Java_com_gyso_videohandlerlib_GysoFfmpegTools_parseSPS 1 %s", "");
     jsize sps_size = env->GetArrayLength(sps_data);
     jbyte *sps_data_ptr = env->GetByteArrayElements(sps_data, nullptr);
     jsize dim_size = env->GetArrayLength(dimensions);
@@ -268,7 +268,7 @@ Java_com_gyso_ndklearnapplication_GysoFfmpegTools_parseSPS(JNIEnv *env, jobject 
         env->ReleaseByteArrayElements(sps_data, sps_data_ptr, 0);
         return -1;
     }
-    LOGD("Java_com_gyso_ndklearnapplication_GysoFfmpegTools_parseSPS 2 %d", dim_size);
+    LOGD("Java_com_gyso_videohandlerlib_GysoFfmpegTools_parseSPS 2 %d", dim_size);
     jint *dim_ptr = env->GetIntArrayElements(dimensions, nullptr);
     int width = 0, height = 0;
     int result = parse_sps(reinterpret_cast<uint8_t *>(sps_data_ptr), sps_size, &width, &height);
@@ -283,7 +283,7 @@ extern "C"
 JNIEXPORT jstring
 
 JNICALL
-Java_com_gyso_ndklearnapplication_GysoFfmpegTools_mainTest(JNIEnv *env, jobject thiz) {
+Java_com_gyso_videohandlerlib_GysoFfmpegTools_mainTest(JNIEnv *env, jobject thiz) {
     std::string hello = "Hello from C++ main test";
     int rs = ff->sum(3);
     const char *avInfo = av_version_info();
@@ -299,7 +299,7 @@ extern "C"
 JNIEXPORT jstring
 
 JNICALL
-Java_com_gyso_ndklearnapplication_GysoFfmpegTools_mainStart(JNIEnv *env, jobject thiz) {
+Java_com_gyso_videohandlerlib_GysoFfmpegTools_mainStart(JNIEnv *env, jobject thiz) {
     // TODO: implement mainStart()
     const char *url = "tcp://172.26.4.37:8999";
     if (play_h264_stream(url) < 0) {
@@ -360,7 +360,7 @@ void renderFrame(uint8_t *src_data, int width, int height, int src_lineSize, uin
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_gyso_ndklearnapplication_GysoFfmpegTools_prepareNative(JNIEnv
+Java_com_gyso_videohandlerlib_GysoFfmpegTools_prepareNative(JNIEnv
                                                                 *env,
                                                                 jobject thiz, jstring
                                                                 path) {
@@ -380,7 +380,7 @@ Java_com_gyso_ndklearnapplication_GysoFfmpegTools_prepareNative(JNIEnv
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_gyso_ndklearnapplication_GysoFfmpegTools_startNative(JNIEnv
+Java_com_gyso_videohandlerlib_GysoFfmpegTools_startNative(JNIEnv
                                                               *env,
                                                               jobject thiz
 ) {
@@ -394,7 +394,7 @@ Java_com_gyso_ndklearnapplication_GysoFfmpegTools_startNative(JNIEnv
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_gyso_ndklearnapplication_GysoFfmpegTools_stopNative(JNIEnv
+Java_com_gyso_videohandlerlib_GysoFfmpegTools_stopNative(JNIEnv
                                                              *env,
                                                              jobject thiz
 ) {
@@ -408,7 +408,7 @@ Java_com_gyso_ndklearnapplication_GysoFfmpegTools_stopNative(JNIEnv
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_gyso_ndklearnapplication_GysoFfmpegTools_releaseNative(JNIEnv
+Java_com_gyso_videohandlerlib_GysoFfmpegTools_releaseNative(JNIEnv
                                                                 *env,
                                                                 jobject thiz
 ) {
@@ -423,7 +423,7 @@ Java_com_gyso_ndklearnapplication_GysoFfmpegTools_releaseNative(JNIEnv
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_gyso_ndklearnapplication_GysoFfmpegTools_setSurfaceNative(JNIEnv
+Java_com_gyso_videohandlerlib_GysoFfmpegTools_setSurfaceNative(JNIEnv
                                                                    *env,
                                                                    jobject thiz,
                                                                    jobject
@@ -441,7 +441,7 @@ Java_com_gyso_ndklearnapplication_GysoFfmpegTools_setSurfaceNative(JNIEnv
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_gyso_ndklearnapplication_GysoFfmpegTools_seekNative(JNIEnv
+Java_com_gyso_videohandlerlib_GysoFfmpegTools_seekNative(JNIEnv
                                                              *env,
                                                              jobject thiz,
                                                              jint
@@ -455,7 +455,7 @@ Java_com_gyso_ndklearnapplication_GysoFfmpegTools_seekNative(JNIEnv
 extern "C"
 JNIEXPORT jint
 JNICALL
-Java_com_gyso_ndklearnapplication_GysoFfmpegTools_getDurationNative(JNIEnv *env,
+Java_com_gyso_videohandlerlib_GysoFfmpegTools_getDurationNative(JNIEnv *env,
                                                                     jobject
                                                                     thiz) {
     if (gysoplayer) {
@@ -468,7 +468,7 @@ Java_com_gyso_ndklearnapplication_GysoFfmpegTools_getDurationNative(JNIEnv *env,
 }
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_gyso_ndklearnapplication_GysoFfmpegTools_setFrameCounter(JNIEnv
+Java_com_gyso_videohandlerlib_GysoFfmpegTools_setFrameCounter(JNIEnv
                                                                   *env,
                                                                   jobject thiz,
                                                                   jint

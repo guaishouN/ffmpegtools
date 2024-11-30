@@ -1,4 +1,4 @@
-package com.gyso.ndklearnapplication;
+package com.gyso.videohandlerlib;
 
 import android.text.TextUtils;
 import android.util.Log;
@@ -11,12 +11,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import javax.security.auth.login.LoginException;
 
 public class GysoFfmpegTools implements SurfaceHolder.Callback {
     private static String TAG = GysoFfmpegTools.class.getSimpleName();
@@ -306,7 +302,7 @@ public class GysoFfmpegTools implements SurfaceHolder.Callback {
         seekNative(playProgress);
     }
 
-    interface OnStatCallback {
+    public interface OnStatCallback {
         default void onPrepared() {
         }
 
